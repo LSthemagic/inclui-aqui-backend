@@ -1,0 +1,103 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS: Tipos pré-definidos para consistência ---
+
+enum UserRole {
+  USER
+  OWNER // Dono de um estabelecimento
+  ADMIN // Moderador do sistema
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING_VERIFICATION
+  BANNED
+}
+
+enum EstablishmentCategory {
+  RESTAURANT
+  CAFE
+  STORE
+  HOTEL
+  SERVICE
+  LEISURE
+  HEALTH
+  OTHER
+}
+
+// --- MODELS: As tabelas do nosso banco ---
+
+model User {
+  id        String     @id @default(uuid()) // Usando UUID para mais segurança
+  name      String
+  email     String     @unique
+  password  String
+  role      UserRole   @default(USER)
+  status    UserStatus @default(ACTIVE)
+  avatarUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  establishments Establishment[] // Um usuário (OWNER) pode ter vários estabelecimentos
+  reviews        Review[]        // Um usuário pode fazer vários reviews
+}
+
+model Establishment {
+  id        String     @id @default(uuid())
+  name      String
+  description String?  @db.Text // Campo de texto mais longo
+  phone     String?
+  category  EstablishmentCategory @default(OTHER)
+
+  // Endereço completo
+  street         String?
+  number         String?
+  neighborhood   String?
+  city           String
+  state          String
+  zipCode        String?
+  latitude       Float
+  longitude      Float
+
+  // Dados de integração e meta-dados
+  googlePlaceId String? @unique // ID do Google para evitar duplicatas
+  coverImageUrl String?
+  accessibilityScore Float? // Nota geral de acessibilidade, pode ser calculada no futuro
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  owner   User   @relation(fields: [ownerId], references: [id]) // Relação obrigatória com um dono
+  ownerId String
+
+  reviews Review[] // Um estabelecimento pode ter vários reviews
+}
+
+model Review {
+  id        String  @id @default(uuid())
+  title     String?
+  comment   String? @db.Text
+  rating    Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  establishment   Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  establishmentId String
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+}

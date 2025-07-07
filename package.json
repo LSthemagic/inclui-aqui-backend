@@ -1,0 +1,50 @@
+{
+  "name": "inclui-aqui-backend",
+  "version": "1.0.0",
+  "description": "Backend API para o projeto IncluiAqui - Sistema de avaliação de acessibilidade",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "db:migrate": "npx prisma migrate dev",
+    "db:generate": "npx prisma generate",
+    "db:studio": "npx prisma studio",
+    "db:seed": "node prisma/seed.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "accessibility",
+    "api",
+    "fastify",
+    "prisma",
+    "nodejs",
+    "backend"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@fastify/cors": "^11.0.1",
+    "@fastify/jwt": "^9.1.0",
+    "@fastify/multipart": "^9.0.3",
+    "@fastify/static": "^8.2.0",
+    "@fastify/swagger": "^9.5.1",
+    "@fastify/swagger-ui": "^5.2.3",
+    "@prisma/client": "^6.11.1",
+    "axios": "^1.10.0",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.2.0",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.0.1",
+    "fastify": "^5.4.0",
+    "fastify-type-provider-zod": "^5.0.1",
+    "multer": "^1.4.5-lts.1",
+    "prisma": "^6.11.1",
+    "uuid": "^10.0.0",
+    "zod": "^3.25.74"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7",
+    "pino-pretty": "^13.0.0"
+  }
+}
