@@ -6,6 +6,7 @@ import {
   reverseGeocode,
   calculateDistance,
   getPhotoUrl,
+  getRouteCoordinates,
   // searchSuggestions,
   // getStaticMapUrl
 } from '../../services/googleMapsService.js';
@@ -201,6 +202,21 @@ export async function placesRoutes(fastify) {
      // Retorna a URL da foto
      return reply.send({ url: response });
   } )
+
+  fastify.post('/path', {}, async (request, reply) => {
+    const { origin, destination } = request.body;
+    // console.log("Origin:", origin, "Destination:", destination);
+    try {
+      const coordinates = await getRouteCoordinates(origin, destination);
+      return reply.send({ coordinates });
+    } catch (error) {
+      fastify.log.error('Erro ao buscar coordenadas da rota:', error);
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: error.message
+      });
+    }
+  });
 
   // Buscar sugestões para autocomplete
   // fastify.get('/suggestions', {

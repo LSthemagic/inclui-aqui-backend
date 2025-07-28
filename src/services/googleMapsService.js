@@ -59,95 +59,6 @@ export async function searchNearbyPlaces({ latitude, longitude, radius, keyword,
   }
 }
 
-/**
- * Obtém detalhes completos de um estabelecimento pelo Place ID
- */
-// export async function getPlaceDetails(placeId) {
-//   if (!API_KEY) {
-//     throw new Error('Chave da API do Google Maps não configurada');
-//   }
-
-//   try {
-//     const fields = [
-//       'place_id',
-//       'name',
-//       'formatted_address',
-//       'geometry',
-//       'rating',
-//       'user_ratings_total',
-//       'formatted_phone_number',
-//       'website',
-//       'opening_hours',
-//       'photos',
-//       'types',
-//       'price_level',
-//       'wheelchair_accessible_entrance',
-//       'wheelchair_accessible_restroom',
-//       'wheelchair_accessible_seating',
-//       'wheelchair_accessible_parking'
-//     ].join(',');
-
-//     const response = await axios.get(`${PLACE_DETAILS_API_URL}/${placeId}`, {
-//       // params: {
-//       //   place_id: placeId,
-//       //   FieldMask: fields,
-//       //   key: API_KEY,
-//       //   language: 'pt-BR',
-//       // },
-//       headers: {
-//         'Content-Type': 'application/json',
-//         "X-Goog-Api-Key": API_KEY,
-//         "X-Goog-FieldMask": fields
-//       }
-//     });
-
-//     console.log("Response from Google Places Details API:", response.data);
-//     if (response.data.status !== 'OK') {
-//       console.error('Erro na API do Google Places Details:', response.data.error_message || response.data.status);
-//       return null;
-//     }
-
-//     const place = response.data.result;
-
-//     return {
-//       placeId: place.place_id,
-//       name: place.name,
-//       address: place.formatted_address,
-//       location: {
-//         lat: place.geometry.location.lat,
-//         lng: place.geometry.location.lng,
-//       },
-//       rating: place.rating,
-//       userRatingsTotal: place.user_ratings_total,
-//       phone: place.formatted_phone_number,
-//       website: place.website,
-//       openingHours: place.opening_hours ? {
-//         openNow: place.opening_hours.open_now,
-//         weekdayText: place.opening_hours.weekday_text
-//       } : null,
-//       photos: place.photos ? place.photos.map(photo => ({
-//         photoReference: photo.photo_reference,
-//         width: photo.width,
-//         height: photo.height
-//       })) : [],
-//       types: place.types,
-//       priceLevel: place.price_level,
-//       accessibility: {
-//         entrance: place.wheelchair_accessible_entrance ?? null,
-//         restroom: place.wheelchair_accessible_restroom ?? null,
-//         seating: place.wheelchair_accessible_seating ?? null,
-//         parking: place.wheelchair_accessible_parking ?? null
-//       }
-
-//     };
-
-//   } catch (error) {
-//     console.error('Erro ao buscar detalhes do estabelecimento:', error.message);
-//     throw new Error('Falha ao buscar detalhes do estabelecimento');
-//   }
-// }
-
-
 export async function getPlaceDetails(placeId) {
   if (!API_KEY) {
     throw new Error('Chave da API do Google Maps não configurada');
@@ -232,23 +143,6 @@ export async function getPlaceDetails(placeId) {
     throw new Error('Falha ao buscar detalhes do estabelecimento');
   }
 }
-
-// async function getPlaceReviewsLegacy(placeId) {
-//   const response = await axios.get(
-//     "https://maps.googleapis.com/maps/api/place/details/json",
-//     {
-//       params: {
-//         place_id: placeId,
-//         fields: "reviews,rating,user_ratings_total",
-//         key: API_KEY,
-//         language: "pt-BR"
-//       }
-//     }
-//   );
-
-//   return response.data.result.reviews ?? [];
-// }
-
 
 
 /**
@@ -365,3 +259,53 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
   return Math.round(distance * 100) / 100; // Arredondar para 2 casas decimais
 }
 
+export const getRouteCoordinates = async (origin, destination) => {
+  const originStr = `${origin.latitude},${origin.longitude}`;
+  const destinationStr = `${destination.latitude},${destination.longitude}`;
+
+  const response = await fetch(
+    `https://maps.googleapis.com/maps/api/directions/json?origin=${originStr}&destination=${destinationStr}&key=${API_KEY}&mode=walking`
+  );
+
+  const data = await response.json();
+  console.log("Directions API Response:", data);
+  if (!data.routes || data.routes.length === 0) {
+    throw new Error('Nenhuma rota encontrada');
+  }
+
+  const points = decodePolyline(data.routes[0].overview_polyline.points);
+  return points;
+};
+
+function decodePolyline(encoded) {
+  let points = [];
+  let index = 0, len = encoded.length;
+  let lat = 0, lng = 0;
+
+  while (index < len) {
+    let b, shift = 0, result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    points.push({
+      latitude: lat / 1e5,
+      longitude: lng / 1e5,
+    });
+  }
+  return points;
+}
