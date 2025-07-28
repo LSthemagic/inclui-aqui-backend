@@ -158,6 +158,7 @@ export async function getPlaceDetails(placeId) {
     const fields = [
       'id',
       'displayName',
+      'reviews',
       'formattedAddress',
       'location',
       'rating',
@@ -180,7 +181,6 @@ export async function getPlaceDetails(placeId) {
       }
     });
 
-    console.log('Response from Google Places Details API (NEW):', response.data);
 
     const place = response.data; // no NEW API já vem direto
 
@@ -198,19 +198,32 @@ export async function getPlaceDetails(placeId) {
       website: place.websiteUri || null,
       openingHours: place.regularOpeningHours
         ? {
-            openNow: place.regularOpeningHours.openNow,
-            weekdayText: place.regularOpeningHours.weekdayDescriptions
-          }
+          openNow: place.regularOpeningHours.openNow,
+          weekdayText: place.regularOpeningHours.weekdayDescriptions
+        }
         : null,
       types: place.types || [],
       priceLevel: place.priceLevel || null,
+      reviews: Array.isArray(place.reviews)
+        ? place.reviews.map((r) => ({
+          id: r.name,
+          rating: r.rating,
+          comment: r.text?.text || '',
+          title: r.originalText?.text || '',
+          createdAt: r.publishTime,
+          owner: {
+            name: r.authorAttribution?.displayName || 'Anônimo',
+            id: r.authorAttribution?.uri || ''
+          }
+        }))
+        : [],
       accessibility: place.accessibilityOptions
         ? {
-            entrance: place.accessibilityOptions.wheelchairAccessibleEntrance ?? null,
-            restroom: place.accessibilityOptions.wheelchairAccessibleRestroom ?? null,
-            seating: place.accessibilityOptions.wheelchairAccessibleSeating ?? null,
-            parking: place.accessibilityOptions.wheelchairAccessibleParking ?? null
-          }
+          entrance: place.accessibilityOptions.wheelchairAccessibleEntrance ?? null,
+          restroom: place.accessibilityOptions.wheelchairAccessibleRestroom ?? null,
+          seating: place.accessibilityOptions.wheelchairAccessibleSeating ?? null,
+          parking: place.accessibilityOptions.wheelchairAccessibleParking ?? null
+        }
         : null
     };
 
@@ -219,6 +232,23 @@ export async function getPlaceDetails(placeId) {
     throw new Error('Falha ao buscar detalhes do estabelecimento');
   }
 }
+
+// async function getPlaceReviewsLegacy(placeId) {
+//   const response = await axios.get(
+//     "https://maps.googleapis.com/maps/api/place/details/json",
+//     {
+//       params: {
+//         place_id: placeId,
+//         fields: "reviews,rating,user_ratings_total",
+//         key: API_KEY,
+//         language: "pt-BR"
+//       }
+//     }
+//   );
+
+//   return response.data.result.reviews ?? [];
+// }
+
 
 
 /**

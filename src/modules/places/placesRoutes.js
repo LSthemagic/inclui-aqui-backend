@@ -43,7 +43,6 @@ export async function placesRoutes(fastify) {
         keyword,
         type
       });
-      console.log("Places found:", places);
 
       return reply.send(places);
     } catch (error) {
@@ -69,7 +68,6 @@ export async function placesRoutes(fastify) {
           message: 'Estabelecimento não encontrado'
         });
       }
-
       return reply.send(placeDetails);
     } catch (error) {
       fastify.log.error('Erro ao buscar detalhes do estabelecimento:', error);
