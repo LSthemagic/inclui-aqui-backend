@@ -76,7 +76,7 @@ app.register(fastifySwagger, {
         email: 'contato@incluiaqui.com'
       }
     },
-    host: 'localhost:3333',
+    host: 'localhost:4444',
     schemes: ['http', 'https'],
     consumes: ['application/json', 'multipart/form-data'],
     produces: ['application/json'],

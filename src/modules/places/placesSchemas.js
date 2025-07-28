@@ -80,14 +80,20 @@ export const placeDetailsResponseSchema = z.object({
   openingHours: z.object({
     openNow: z.boolean(),
     weekdayText: z.array(z.string())
-  }).optional(),
+  }).nullable().optional(),
   photos: z.array(z.object({
     photoReference: z.string(),
     width: z.number(),
     height: z.number()
   })).optional(),
   types: z.array(z.string()).optional(),
-  priceLevel: z.number().optional()
+  priceLevel: z.number().optional(),
+  accessibility: z.object({
+    entrance: z.boolean().optional().describe('Entrada acessível para cadeirantes'),
+    restroom: z.boolean().optional().describe('Entrada acessível para cadeirantes'),
+    seating: z.boolean().optional().describe('Entrada acessível para cadeirantes'),
+    parking: z.boolean().optional().describe('Entrada acessível para cadeirantes'),  }).optional().describe('Recursos de acessibilidade do estabelecimento')
+
 });
 
 export const geocodeResponseSchema = z.object({

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const PLACES_API_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
-const PLACE_DETAILS_API_URL = 'https://maps.googleapis.com/maps/api/place/details/json';
+const PLACE_DETAILS_API_URL = 'https://places.googleapis.com/v1/places';
 const GEOCODING_API_URL = 'https://maps.googleapis.com/maps/api/geocode/json';
 const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
@@ -62,58 +62,164 @@ export async function searchNearbyPlaces({ latitude, longitude, radius, keyword,
 /**
  * Obtém detalhes completos de um estabelecimento pelo Place ID
  */
+// export async function getPlaceDetails(placeId) {
+//   if (!API_KEY) {
+//     throw new Error('Chave da API do Google Maps não configurada');
+//   }
+
+//   try {
+//     const fields = [
+//       'place_id',
+//       'name',
+//       'formatted_address',
+//       'geometry',
+//       'rating',
+//       'user_ratings_total',
+//       'formatted_phone_number',
+//       'website',
+//       'opening_hours',
+//       'photos',
+//       'types',
+//       'price_level',
+//       'wheelchair_accessible_entrance',
+//       'wheelchair_accessible_restroom',
+//       'wheelchair_accessible_seating',
+//       'wheelchair_accessible_parking'
+//     ].join(',');
+
+//     const response = await axios.get(`${PLACE_DETAILS_API_URL}/${placeId}`, {
+//       // params: {
+//       //   place_id: placeId,
+//       //   FieldMask: fields,
+//       //   key: API_KEY,
+//       //   language: 'pt-BR',
+//       // },
+//       headers: {
+//         'Content-Type': 'application/json',
+//         "X-Goog-Api-Key": API_KEY,
+//         "X-Goog-FieldMask": fields
+//       }
+//     });
+
+//     console.log("Response from Google Places Details API:", response.data);
+//     if (response.data.status !== 'OK') {
+//       console.error('Erro na API do Google Places Details:', response.data.error_message || response.data.status);
+//       return null;
+//     }
+
+//     const place = response.data.result;
+
+//     return {
+//       placeId: place.place_id,
+//       name: place.name,
+//       address: place.formatted_address,
+//       location: {
+//         lat: place.geometry.location.lat,
+//         lng: place.geometry.location.lng,
+//       },
+//       rating: place.rating,
+//       userRatingsTotal: place.user_ratings_total,
+//       phone: place.formatted_phone_number,
+//       website: place.website,
+//       openingHours: place.opening_hours ? {
+//         openNow: place.opening_hours.open_now,
+//         weekdayText: place.opening_hours.weekday_text
+//       } : null,
+//       photos: place.photos ? place.photos.map(photo => ({
+//         photoReference: photo.photo_reference,
+//         width: photo.width,
+//         height: photo.height
+//       })) : [],
+//       types: place.types,
+//       priceLevel: place.price_level,
+//       accessibility: {
+//         entrance: place.wheelchair_accessible_entrance ?? null,
+//         restroom: place.wheelchair_accessible_restroom ?? null,
+//         seating: place.wheelchair_accessible_seating ?? null,
+//         parking: place.wheelchair_accessible_parking ?? null
+//       }
+
+//     };
+
+//   } catch (error) {
+//     console.error('Erro ao buscar detalhes do estabelecimento:', error.message);
+//     throw new Error('Falha ao buscar detalhes do estabelecimento');
+//   }
+// }
+
+
 export async function getPlaceDetails(placeId) {
   if (!API_KEY) {
     throw new Error('Chave da API do Google Maps não configurada');
   }
 
   try {
-    const response = await axios.get(PLACE_DETAILS_API_URL, {
-      params: {
-        place_id: placeId,
-        fields: 'place_id,name,formatted_address,geometry,rating,user_ratings_total,formatted_phone_number,website,opening_hours,photos,types,price_level',
-        key: API_KEY,
-        language: 'pt-BR',
-      },
+    // Campos do NEW API
+    const fields = [
+      'id',
+      'displayName',
+      'formattedAddress',
+      'location',
+      'rating',
+      'userRatingCount',
+      'internationalPhoneNumber',
+      'websiteUri',
+      'regularOpeningHours',
+      'types',
+      'priceLevel',
+      'accessibilityOptions'
+    ].join(',');
+
+    const url = `${PLACE_DETAILS_API_URL}/${placeId}`;
+
+    const response = await axios.get(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': API_KEY,
+        'X-Goog-FieldMask': fields
+      }
     });
 
-    if (response.data.status !== 'OK') {
-      console.error('Erro na API do Google Places Details:', response.data.error_message || response.data.status);
-      return null;
-    }
+    console.log('Response from Google Places Details API (NEW):', response.data);
 
-    const place = response.data.result;
-    
+    const place = response.data; // no NEW API já vem direto
+
     return {
-      placeId: place.place_id,
-      name: place.name,
-      address: place.formatted_address,
+      placeId: place.id,
+      name: place.displayName?.text || 'Sem nome',
+      address: place.formattedAddress,
       location: {
-        lat: place.geometry.location.lat,
-        lng: place.geometry.location.lng,
+        lat: place.location?.latitude,
+        lng: place.location?.longitude,
       },
       rating: place.rating,
-      userRatingsTotal: place.user_ratings_total,
-      phone: place.formatted_phone_number,
-      website: place.website,
-      openingHours: place.opening_hours ? {
-        openNow: place.opening_hours.open_now,
-        weekdayText: place.opening_hours.weekday_text
-      } : null,
-      photos: place.photos ? place.photos.map(photo => ({
-        photoReference: photo.photo_reference,
-        width: photo.width,
-        height: photo.height
-      })) : [],
-      types: place.types,
-      priceLevel: place.price_level
+      userRatingsTotal: place.userRatingCount,
+      phone: place.internationalPhoneNumber || null,
+      website: place.websiteUri || null,
+      openingHours: place.regularOpeningHours
+        ? {
+            openNow: place.regularOpeningHours.openNow,
+            weekdayText: place.regularOpeningHours.weekdayDescriptions
+          }
+        : null,
+      types: place.types || [],
+      priceLevel: place.priceLevel || null,
+      accessibility: place.accessibilityOptions
+        ? {
+            entrance: place.accessibilityOptions.wheelchairAccessibleEntrance ?? null,
+            restroom: place.accessibilityOptions.wheelchairAccessibleRestroom ?? null,
+            seating: place.accessibilityOptions.wheelchairAccessibleSeating ?? null,
+            parking: place.accessibilityOptions.wheelchairAccessibleParking ?? null
+          }
+        : null
     };
 
   } catch (error) {
-    console.error('Erro ao buscar detalhes do estabelecimento:', error.message);
+    console.error('Erro ao buscar detalhes do estabelecimento (NEW API):', error.response?.data || error.message);
     throw new Error('Falha ao buscar detalhes do estabelecimento');
   }
 }
+
 
 /**
  * Converte endereço em coordenadas (geocoding)
@@ -139,7 +245,7 @@ export async function geocodeAddress(address) {
     }
 
     const result = response.data.results[0];
-    
+
     return {
       formattedAddress: result.formatted_address,
       location: {
@@ -184,7 +290,7 @@ export async function reverseGeocode(latitude, longitude) {
     }
 
     const result = response.data.results[0];
-    
+
     return {
       formattedAddress: result.formatted_address,
       placeId: result.place_id,
@@ -219,13 +325,13 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Raio da Terra em km
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c; // Distância em km
-  
+
   return Math.round(distance * 100) / 100; // Arredondar para 2 casas decimais
 }
 
